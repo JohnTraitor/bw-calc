@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html>
+<body>
+
+<h3>BW Calc</h3>
+
+This tool helps visualise the expected value of $bw.<br>
+ The number under a bar is the number of rolls after deducting rolls invested in bw.<br>
+ The number above it is the expected value or rolling a wish or a star wish. <br>
+ The red bar is the highest value and therefore the recommended number of rolls per hour.<br>
+ <br>
+
+<label></label>Total number of rolls:
+<input type="number" id="inputA" step="any"></label><br>
+
+<label></label>Rolls invested in bk:
+<input type="number" id="inputAa" step="any"></label><br>
+
+<label></label>Average Perk 1:
+<input type="number" id="inputB" step="any"></label>%<br>
+
+<label></label>Number of Floor 2s Built:
+<input type="number" id="inputC" step="any"></label><br>
+
+<label></label>Also draw my chances for up to this number more bk:
+<input type="number" id="inputD" step="any"></label><br>
+
+<button onclick="start()">Run</button>
+
+<br><br>
+
+Zoom:
+<input type="range" min="1" max="3" step="0.1" value="1" id="zoomSlider">
+
+<br><br>
+
+<div style="width:100%; overflow-x:auto; border:1px solid #ccc;">
+<canvas id="chart" height="450"></canvas>
+</div>
+
+<script>
+
+document.getElementById("zoomSlider").addEventListener("input", function() {
+    const zoom = this.value;
+    document.getElementById("chart").style.transform = "scale(" + zoom + ")";
+    document.getElementById("chart").style.transformOrigin = "left top";
+});
+
+function start() {
+
+    let a = parseFloat(document.getElementById("inputA").value) - parseFloat(document.getElementById("inputAa").value);
+    let b = (parseFloat(document.getElementById("inputB").value) / 100) + 2.5;
+    let c = parseFloat(document.getElementById("inputC").value);
+    let d = parseFloat(document.getElementById("inputD").value) +1;
+
+    if (isNaN(a) || isNaN(b) || isNaN(c) || isNaN(d) ) {
+        alert("Please enter valid numbers.");
+        return;
+    }
+
+    runProgram(a, b, c, d);
+}
+
+function runProgram(a, b, c, d) {
+
+    let allRuns = [];
+
+    let towerbonus= 0;
+
+    for (let floor = 1; floor <= c; floor++) {
+         if (floor == 1 ) { towerbonus += 0.5};
+         if (floor == 2 ) { towerbonus += 0.25};
+         if (floor == 3 ) { towerbonus += 0.2};
+         if (floor == 4 ) { towerbonus += 0.16};
+         if (floor == 5 ) { towerbonus += 0.13};
+         if (floor == 6 ) { towerbonus += 0.1};
+         if (floor == 7 ) { towerbonus += 0.08};
+         if (floor == 8 ) { towerbonus += 0.06};
+         if (floor == 9 ) { towerbonus += 0.05};
+         if (floor == 10 ) { towerbonus += 0.04};
+         if (floor == 11 || floor == 12) { towerbonus += 0.03};
+         if (floor == 13 || floor == 14 || floor == 15) { towerbonus += 0.02};
+         if (floor > 15 ) {towerbonus += 0.01};
+    }
+
+    for (let run = 0; run < d; run++) {
+
+        let currentA = a - run;
+        let currentB = b;
+
+        let products = [];
+        let column = 1;
+
+        while (column <= 10000 && currentA >= 8) {
+
+            products.push(currentA * (currentB + towerbonus));
+
+            if (column >= 1 && column <= 5) {
+                currentA -= 1;
+                currentB += 0.3;
+            } else if (column >= 6 && column <= 15) {
+                currentA -= 1;
+                currentB += 0.25;
+            } else if (column >= 16 && column <= 100) {
+                currentA -= 1;
+                currentB += 0.2;
+            } else if (column >= 101 && column <= 200) {
+                currentA -= 1;
+                currentB += 0.1;
+            } else {
+                currentA -= 1;
+                currentB += 0.02;
+            }
+
+            column++;
+        }
+
+        allRuns.push(products);
+    }
+    drawBarChart(allRuns, a);
+}
+
+function drawBarChart(allRuns, originalA) {
+
+    const canvas = document.getElementById("chart");
+    const ctx = canvas.getContext("2d");
+
+    const barWidth = 70;
+    const sectionHeight = 400;
+
+    const longestRow = Math.max(...allRuns.map(r => r.length));
+
+    canvas.width = longestRow * barWidth + 50;
+    canvas.height = allRuns.length * sectionHeight;
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    ctx.font = "14px Arial";
+    ctx.textAlign = "center";
+
+    allRuns.forEach((values, runIndex) => {
+
+        const maxValue = Math.max(...values);
+        const offsetY = runIndex * sectionHeight;
+
+        values.slice().reverse().forEach((value, index) => {
+
+            const barHeight = (value / maxValue) * (sectionHeight - 80);
+
+            const x = index * barWidth + 20;
+            const y = offsetY + sectionHeight - barHeight - 30;
+
+            if (value === maxValue) {
+                ctx.fillStyle = "red";
+            } else {
+                ctx.fillStyle = "steelblue";
+            }
+
+            ctx.fillRect(x, y, barWidth - 20, barHeight);
+
+            ctx.fillStyle = "black";
+
+            ctx.fillText(value.toFixed(2), x + (barWidth - 20)/2, y - 5);
+
+            ctx.fillText(
+                (8  + index),
+                x + (barWidth - 20)/2,
+                offsetY + sectionHeight - 10
+            );
+
+        });
+
+    });
+}
+
+</script>
+
+</body>
+</html>
